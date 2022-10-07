@@ -1,17 +1,37 @@
 ﻿@inherits LayoutComponentBase
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+@inject IJSRuntime JSRuntime;
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
+<div style="position: absolute; width: 350px; height: 90px; top:60px; right: 0;">
+    <Toast HTMLId="MainToast" Title="Toast" Message="Message" @ref="MainToast" /><!-- also note the @ref property here -->
+</div>
+<CascadingValue Value="this">
+    <!-- here the "magic" CascadingValue tag -->
+    <div class="page">
+        <div class="sidebar">
+            <NavMenu />
         </div>
 
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
-</div>
+        <main>
+            <div class="top-row px-4">
+                <a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
+            </div>
+
+            <article class="content px-4">
+                @Body
+            </article>
+        </main>
+    </div>
+</CascadingValue>
+@code {
+    private Toast? MainToast { get; set; }
+
+    public async Task PopulateMainToastAsync(string title, string message, string cssClass, string icon = "oi oi-info")
+    {
+        MainToast?.RefreshComponent(title, message, icon, cssClass);
+        await JSRuntime.InvokeVoidAsync("MV_Components.ToggleToast", "#MainToast", "show");
+        StateHasChanged();
+    }
+
+
+}

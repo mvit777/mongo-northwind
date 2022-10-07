@@ -152,6 +152,8 @@ else
     private InputCalendar ? OrderDate;
     private InputCalendar? ShippedDate;
     private InputCalendar? RequiredDate;
+    [CascadingParameter]
+    public MainLayout? Layout { get; set; }
 
 
     /***************************custom handlers*************************/
@@ -171,9 +173,12 @@ else
             var url = endpoint + "/" + OrderItem._id;
             var data = JsonConvert.SerializeObject(OrderItem);
             HttpResponseMessage response = await Http.PutAsJsonAsync(url, data);
+            OnCloseEditModal();
             if(response.IsSuccessStatusCode == false){
                 Console.WriteLine(response.ReasonPhrase);
-                //do toast here
+                await Layout.PopulateMainToastAsync("Operation result", "operation failed!", "alert-danger", "oi oi-circle-check");
+            }else{
+                await Layout.PopulateMainToastAsync("Operation result", "order saved!", "alert-success", "oi oi-circle-check");
             }
             
         }
