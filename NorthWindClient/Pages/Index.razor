@@ -1,0 +1,237 @@
+﻿@page "/"
+@using Domain.Models;
+@using Newtonsoft.Json;
+@using System.Text
+
+@inject HttpClient Http;
+@inject IJSRuntime JSRuntime;
+@inject Microsoft.Extensions.Configuration.IConfiguration config
+
+<PageTitle>Index</PageTitle>
+<h1>Orders</h1>
+@if (OrdersList == null)
+{
+    <TableSpinner></TableSpinner>
+
+}
+else
+{
+    <div style="clear:both"></div>
+    <FluentSwitch Checked="true"></FluentSwitch> <span>Data Mode</span>
+    <div style="clear:both"></div>
+    <div id="results-table">
+    <HtmlTable Items="OrdersList" Context="OrderItem" HTMLId="OrdersListTable" @ref="OrdersListTable">
+        <HeaderTemplate>
+            <th>ID</th>
+            <th>Customer</th>
+            <th>Order Date</th>
+            <th>Shipped Date</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </HeaderTemplate>
+        <RowTemplate>
+            <td>@OrderItem.OrderID</td>
+            <td>@OrderItem.CustomerID</td>
+            <td>@OrderItem.OrderDate</td>
+            <td>@OrderItem.ShippedDate</td>
+            <td>@OrderItem.Status</td>
+            <td>
+                <FluentButton @onclick="() => OnEditClicked(OrderItem._id)">
+                    Edit
+                    <FluentIcon Name="@FluentIcons.Edit" Slot="start" Size="@IconSize.Size16" Filled=false />
+                </FluentButton>
+                <FluentButton>
+                    Delete
+                    <FluentIcon Name="@FluentIcons.Delete" Slot="start" Size="@IconSize.Size16" Filled=false />
+                </FluentButton>
+            </td>
+        </RowTemplate>
+    </HtmlTable>
+    </div>
+    <!--hidden edit modal-->
+    <Modal HTMLId="EditOrdersModal" HeaderTitle="EDIT" HTMLCssClass="modal-xl" ShowFooter="false">
+        <HeaderTemplate>
+            <h5 class="modal-title" id="editOrderModalH5"><span class="oi oi-pencil"></span> Editing Order.. @OrderItem?.OrderID</h5>
+            <span class="rounded-circle  light-purple-bg" style="background-color: white;">
+                <button type="button" class="close" @onclick="OnCloseEditModal" data-dismiss="modal" aria-label="Close" style="margin-right: -2px;">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </span>
+        </HeaderTemplate>
+        <ChildContent>
+            @*<DynamicComponent Type="@someType" Parameters="@someParameters" />*@
+            <FluentTabs ActiveId="@activeTab" OnTabChange="HandleOnTabChange">
+                <FluentTab Text="Order"></FluentTab>
+                <FluentTab Text="Details"></FluentTab>
+            <FluentTabPanel>
+                    <EditForm EditContext="@OrderEditContext" class="row p-3">
+                <div class="col-md-6 mb-3">
+                    <label for="Customer">Customer</label>
+                    <InputText id="Customer" @bind-Value="OrderItem.CustomerID" class="form-control" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="OrderDate">Order Date</label>
+                    @*<InputText id="OrderDate" @bind-Value="OrderItem.OrderDate" class="form-control" />*@
+                            <InputCalendar @ref="OrderDate" Value="@OrderItem.OrderDate" HTMLId="OrderDate" HTMLCssClass="form-control"></InputCalendar>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="ShippedDate">Shipped Date</label>
+                    @*<InputText id="ShippedDate" @bind-Value="OrderItem.ShippedDate" class="form-control" />*@
+                            <InputCalendar @ref="ShippedDate" Value="@OrderItem.ShippedDate" HTMLId="ShippedDate" HTMLCssClass="form-control"></InputCalendar>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="RequiredDate">Required Date</label>
+                    @*<InputText id="RequiredDate" @bind-Value="OrderItem.RequiredDate" class="form-control" />*@
+                            <InputCalendar @ref="RequiredDate" Value="@OrderItem.RequiredDate" HTMLId="RequiredDate" HTMLCssClass="form-control"></InputCalendar>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="ShipVia">Ship Via</label><br />
+                    <FluentSelect Options="@SuppliersOptions" @bind-Value="OrderItem.ShipVia"></FluentSelect>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="RequiredDate">Freight</label>
+                    <InputNumber id="RequiredDate" @bind-Value="OrderItem.Freight" class="form-control" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="ShipName">ShipName</label>
+                    <InputText id="ShipName" @bind-Value="OrderItem.ShipName" class="form-control" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="ShipAddress">Ship Address</label>
+                    <InputText id="ShipAddress" @bind-Value="OrderItem.ShipAddress" class="form-control" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="ShipCity">Ship City</label>
+                    <InputText id="ShipCity" @bind-Value="OrderItem.ShipCity" class="form-control" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="ShipRegion">Ship Region</label>
+                    <InputText id="ShipRegion" @bind-Value="OrderItem.ShipRegion" class="form-control" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="ShipPostalCode">Ship Postal Code</label>
+                    <InputNumber id="ShipPostalCode" @bind-Value="OrderItem.ShipPostalCode" class="form-control" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="ShipCountry">Ship Country</label>
+                    <InputText id="ShipCountry" @bind-Value="OrderItem.ShipCountry" class="form-control" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="Status">Status</label>
+                    <InputText id="Status" @bind-Value="OrderItem.Status" class="form-control" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="float-end" style="margin-top: 50px;">
+                <FluentButton @onclick="() => OnSaveClicked(OrderItem._id)">
+                    Save Order
+                    <FluentIcon Name="@FluentIcons.Save" Slot="start" Size="@IconSize.Size16" Filled=false />
+                </FluentButton>
+                    </div>
+                </div>
+            </EditForm>
+                </FluentTabPanel>
+                <FluentTabPanel>
+                    here goes details form
+                </FluentTabPanel>
+            </FluentTabs>
+        </ChildContent>
+    </Modal>
+}
+@code{
+    private List<Orders> ? OrdersList = null;
+    private Orders ? OrderItem = new Orders();
+    private string endpoint ="/orders";
+    private string currentModal = "";
+    private string currentId = "";
+    private EditContext? OrderEditContext;
+    private HtmlTable<Orders> ? OrdersListTable = null;
+    private string? activeTab = "tab-0";
+    private FluentTab? changedto;
+    private List<Suppliers>? SuppliersList = null;
+    List<Option<string>> ? SuppliersOptions = null;
+    private InputCalendar ? OrderDate;
+    private InputCalendar? ShippedDate;
+    private InputCalendar? RequiredDate;
+
+
+    /***************************custom handlers*************************/
+    private void BindDates(){
+        OrderItem.OrderDate = OrderDate.Value;
+        OrderItem.RequiredDate = RequiredDate.Value;
+        OrderItem.ShippedDate = ShippedDate.Value;
+    }
+    private void HandleOnTabChange(FluentTab tab)
+    {
+        changedto = tab;
+    }
+    private async void OnSaveClicked(string id){
+        if(OrderEditContext.Validate()){
+            OrderItem =(Orders)OrderEditContext.Model;
+            BindDates();
+            var url = endpoint + "/" + OrderItem._id;
+            var data = JsonConvert.SerializeObject(OrderItem);
+            HttpResponseMessage response = await Http.PutAsJsonAsync(url, data);
+            if(response.IsSuccessStatusCode == false){
+                Console.WriteLine(response.ReasonPhrase);
+                //do toast here
+            }
+            
+        }
+    }
+    private async void OnEditClicked(string id)
+    {
+        currentId = id;
+        await GetOrder(currentId);
+        currentModal = "#EditOrdersModal";
+        await JSRuntime.InvokeVoidAsync("MV_Components.ToggleModal", currentModal, "show");
+        StateHasChanged();
+
+    }
+    private async void OnCloseEditModal(){
+        await JSRuntime.InvokeVoidAsync("MV_Components.ToggleModal", currentModal, "hide");
+        currentId = "";
+        currentModal = "";
+        OrderItem = new Orders();
+    }
+    /************************Data client*******************************/
+    private async Task GetOrder(string id) {
+        await Task.Run(() =>
+        {   
+            //var url = endpoint + "/" + currentId;
+            //OrderItem = await Http.GetFromJsonAsync<Orders>(url);
+            OrderItem = OrdersList?.AsQueryable<Orders>().Where(x => x._id == id).SingleOrDefault();
+            OrderEditContext = new EditContext(OrderItem);
+
+        });
+    }
+    private async Task GetOrders(bool refreshTable = false)
+    {
+        OrdersList = await Http.GetFromJsonAsync<List<Orders>>(endpoint);
+        if(refreshTable){
+            //string options = ConfigService.GetSetting("BikeList");
+            string options = String.Empty;
+            OrdersListTable?.RefreshComponent(OrdersList);
+            await JSRuntime.InvokeVoidAsync("MV_Components.RefreshJSDataTable", "#OrdersListTable", new object[] { options });
+            StateHasChanged();//<--needed?
+        }
+    }
+    /****************************system handlers*********************/
+    protected override async Task OnInitializedAsync()
+    {
+        endpoint = config["baseUrl"] + endpoint;
+        OrderEditContext = new EditContext(OrderItem);
+        var suppliersUrl = config["baseUrl"] + "/suppliers";
+        SuppliersList = await Http.GetFromJsonAsync<List<Suppliers>>(suppliersUrl);
+        SuppliersOptions = new List<Option<string>>();
+        foreach(var supplier in SuppliersList){
+            SuppliersOptions.Add(new Option<string> {Key=supplier._id, Value = supplier.CompanyName });
+        }
+        
+        await GetOrders();
+    }
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        await JSRuntime.InvokeVoidAsync("MV_Components.JSDataTable", "#OrdersListTable", new object[] { });
+    }
+}
+

@@ -1,0 +1,67 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+@using MV.Components.Helpers
+
+<InputText id="@HTMLId" @bind-Value="@Value" class="@HTMLCssClass" @ref="MyInputText" @onclick="ShowCalendar"></InputText>
+@if(isCalendarVisible){
+    <FluentToolbar id="toolbar-fluent-components-two" style="width:100%" @ref=Toolbar>
+        <FluentSelect DisplayName="Year" Options=@yearOptions @bind-Value="@selectedYear"  /> Year
+        <FluentSelect DisplayName="Month" Options=@monthOptions @bind-Value="@selectedMonth" /> Month
+        <FluentButton @onclick="HideCalendar" >Hide Calendar</FluentButton>  
+    </FluentToolbar>
+    <FluentCalendar Year="@selectedYear" Month="@selectedMonth" OnDateClicked="HandleDateClicked" Readonly=false SelectedDates="@selectedDates"></FluentCalendar>
+}
+@code {
+    [Parameter]public string ? Value { get; set; }
+    [Parameter]public string ? HTMLId { get; set; }
+    [Parameter]
+    public string HTMLCssClass { get; set; } = "form-control";
+    private DateTime clickedDate = DateTime.UtcNow;
+    private bool isCalendarVisible = false;
+    private FluentToolbar? Toolbar;
+    int selectedYear = DateTime.Now.Year;
+    int selectedMonth = DateTime.Now.Month;
+    int selectedDay = DateTime.Now.Day;
+    List<DateOnly> selectedDates = new List<DateOnly>();
+    private List<Option<int>> yearOptions = new List<Option<int>>();
+    private List<Option<int>> monthOptions = new List<Option<int>>();
+    private InputText ? MyInputText { get; set; }
+
+
+    private void HandleDateClicked(DateOnly date)
+    {
+        clickedDate = new DateTime(date.Year, date.Month, date.Day);
+        isCalendarVisible = false;
+        Value = clickedDate.ToUniversalTime().ToString("yyyy-MM-dd");
+        StateHasChanged();
+    }
+    private void ShowCalendar(){
+        isCalendarVisible = true;
+        StateHasChanged();
+    }
+    private void HideCalendar(){
+        isCalendarVisible = false;
+        StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync(){
+        await Task.Run(() =>
+        {
+            yearOptions.AddRange(Number.GetIntegerOptions(1995, 2040));
+            monthOptions.AddRange(Number.GetIntegerOptions(1, 12));
+            //selectedDates.Add(new DateOnly(selectedYear, selectedMonth, selectedDay));
+        });
+
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            if(isCalendarVisible){
+                
+                StateHasChanged();
+            }
+            
+            
+        }
+    }
+}

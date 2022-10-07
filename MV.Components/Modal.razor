@@ -1,0 +1,23 @@
+﻿<!-- Modal -->
+<div class="modal fade" id="@HTMLId" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog  @HTMLCssClass" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                @HeaderTemplate
+            </div>
+            <div class="modal-body">
+                @ChildContent
+            </div>
+            @if (ShowFooter)
+            {
+                <div class="modal-footer">
+                    @FooterTemplate
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+
+}
