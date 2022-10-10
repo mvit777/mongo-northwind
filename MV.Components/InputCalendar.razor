@@ -13,8 +13,9 @@
 @code {
     [Parameter]public string ? Value { get; set; }
     [Parameter]public string ? HTMLId { get; set; }
+    [Parameter]public string HTMLCssClass { get; set; } = "form-control";
     [Parameter]
-    public string HTMLCssClass { get; set; } = "form-control";
+    public string DateFormat { get; set; } = "yyyy-MM-dd";
     private DateTime clickedDate = DateTime.UtcNow;
     private bool isCalendarVisible = false;
     private FluentToolbar? Toolbar;
@@ -31,7 +32,7 @@
     {
         clickedDate = new DateTime(date.Year, date.Month, date.Day);
         isCalendarVisible = false;
-        Value = clickedDate.ToUniversalTime().ToString("yyyy-MM-dd");
+        Value = clickedDate.ToUniversalTime().ToString(DateFormat);
         StateHasChanged();
     }
     private void ShowCalendar(){

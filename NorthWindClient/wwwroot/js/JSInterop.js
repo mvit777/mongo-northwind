@@ -1,5 +1,5 @@
 ﻿
-//define namespace for bootstrap components
+//define namespace for mv/bootstrap components
 var MV_Components = {};
 //register the helper functions in the namespace for bootstrap components
 (function () {
@@ -10,7 +10,7 @@ var MV_Components = {};
         $(toast).toast(options);
     }
     this.JSDataTable = function (table, options) {
-        //this will take care we not recreate the table
+        //this will take care we do not recreate the table
         if (!$.fn.dataTable.isDataTable(table)) {
             $(table).DataTable(options);
         }

@@ -1,11 +1,13 @@
 ﻿@page "/"
 @using Domain.Models;
 @using Newtonsoft.Json;
-@using System.Text
+@using System.Text;
+@using Domain.Infrastructure.services;
 
 @inject HttpClient Http;
 @inject IJSRuntime JSRuntime;
-@inject Microsoft.Extensions.Configuration.IConfiguration config
+@*@inject Microsoft.Extensions.Configuration.IConfiguration config*@
+@inject ConfigService ConfigService;
 
 <PageTitle>Index</PageTitle>
 <h1>Orders</h1>
@@ -18,7 +20,9 @@ else
 {
     <div style="clear:both"></div>
     <FluentSwitch Checked="true"></FluentSwitch> <span>Data Mode</span>
+    <div class="float-end"><FluentButton @onclick="OnAddClicked">Add Order<FluentIcon Name="@FluentIcons.Add" Slot="start" Size="@IconSize.Size16" Filled=false /></FluentButton></div>
     <div style="clear:both"></div>
+    <br />
     <div id="results-table">
     <HtmlTable Items="OrdersList" Context="OrderItem" HTMLId="OrdersListTable" @ref="OrdersListTable">
         <HeaderTemplate>
@@ -72,7 +76,7 @@ else
                 <div class="col-md-6 mb-3">
                     <label for="OrderDate">Order Date</label>
                     @*<InputText id="OrderDate" @bind-Value="OrderItem.OrderDate" class="form-control" />*@
-                            <InputCalendar @ref="OrderDate" Value="@OrderItem.OrderDate" HTMLId="OrderDate" HTMLCssClass="form-control"></InputCalendar>
+                            <InputCalendar @ref="OrderDate" Value="@OrderItem.OrderDate" HTMLId="OrderDate" HTMLCssClass="form-control" DateFormat="yyyy-MM-dd"></InputCalendar>
                 </div>
                 <div class="col-md-6 mb-3">
                     <label for="ShippedDate">Shipped Date</label>
@@ -147,13 +151,15 @@ else
     private HtmlTable<Orders> ? OrdersListTable = null;
     private string? activeTab = "tab-0";
     private FluentTab? changedto;
-    private List<Suppliers>? SuppliersList = null;
-    List<Option<string>> ? SuppliersOptions = null;
+    private List<Shippers>? ShippersList = null;
+    private List<Option<string>> ? SuppliersOptions = null;
     private InputCalendar ? OrderDate;
     private InputCalendar? ShippedDate;
     private InputCalendar? RequiredDate;
     [CascadingParameter]
     public MainLayout? Layout { get; set; }
+    private int MaxtOrderId { get; set; }
+
 
 
     /***************************custom handlers*************************/
@@ -170,9 +176,11 @@ else
         if(OrderEditContext.Validate()){
             OrderItem =(Orders)OrderEditContext.Model;
             BindDates();
-            var url = endpoint + "/" + OrderItem._id;
+            //var url = endpoint + "/" + OrderItem._id;
+            var url = endpoint;
             var data = JsonConvert.SerializeObject(OrderItem);
-            HttpResponseMessage response = await Http.PutAsJsonAsync(url, data);
+            //HttpResponseMessage response = await Http.PutAsJsonAsync(url, data);//at somepoint stopped working
+            HttpResponseMessage response = await Http.PostAsJsonAsync(url, data);//at somepoint stopped working
             OnCloseEditModal();
             if(response.IsSuccessStatusCode == false){
                 Console.WriteLine(response.ReasonPhrase);
@@ -180,7 +188,7 @@ else
             }else{
                 await Layout.PopulateMainToastAsync("Operation result", "order saved!", "alert-success", "oi oi-circle-check");
             }
-            
+
         }
     }
     private async void OnEditClicked(string id)
@@ -198,6 +206,13 @@ else
         currentModal = "";
         OrderItem = new Orders();
     }
+    private async void OnAddClicked(){
+        OrderItem = new Orders();
+        //TODO: GET highest OrderID + 1
+        currentId = "";
+        currentModal = "#EditOrdersModal";
+        await JSRuntime.InvokeVoidAsync("MV_Components.ToggleModal", currentModal, "show");
+    }
     /************************Data client*******************************/
     private async Task GetOrder(string id) {
         await Task.Run(() =>
@@ -211,32 +226,37 @@ else
     }
     private async Task GetOrders(bool refreshTable = false)
     {
+        endpoint = ConfigService.GetBaseUrl() + ConfigService.GetUrl("orders.endpoint");
         OrdersList = await Http.GetFromJsonAsync<List<Orders>>(endpoint);
         if(refreshTable){
-            //string options = ConfigService.GetSetting("BikeList");
+            //string options = ConfigService.GetSetting("OrdersList");
             string options = String.Empty;
             OrdersListTable?.RefreshComponent(OrdersList);
             await JSRuntime.InvokeVoidAsync("MV_Components.RefreshJSDataTable", "#OrdersListTable", new object[] { options });
-            StateHasChanged();//<--needed?
+            //StateHasChanged();//<--needed?
+        }
+    }
+    private async Task GetShippersList(){
+        var shippersUrl = ConfigService.GetBaseUrl() + ConfigService.GetUrl("shippers.endpoint");
+        ShippersList = await Http.GetFromJsonAsync<List<Shippers>>(shippersUrl);
+        SuppliersOptions = new List<Option<string>>();
+        foreach (var shipper in ShippersList)
+        {
+            SuppliersOptions.Add(new Option<string> { Key = shipper._id, Value = shipper.CompanyName });
         }
     }
     /****************************system handlers*********************/
     protected override async Task OnInitializedAsync()
     {
-        endpoint = config["baseUrl"] + endpoint;
         OrderEditContext = new EditContext(OrderItem);
-        var suppliersUrl = config["baseUrl"] + "/suppliers";
-        SuppliersList = await Http.GetFromJsonAsync<List<Suppliers>>(suppliersUrl);
-        SuppliersOptions = new List<Option<string>>();
-        foreach(var supplier in SuppliersList){
-            SuppliersOptions.Add(new Option<string> {Key=supplier._id, Value = supplier.CompanyName });
-        }
-        
+        await GetShippersList();
         await GetOrders();
     }
     protected async override Task OnAfterRenderAsync(bool firstRender)
     {
-        await JSRuntime.InvokeVoidAsync("MV_Components.JSDataTable", "#OrdersListTable", new object[] { });
+        //string options = ConfigService.GetSetting("OrdersList");
+        string options = String.Empty;
+        await JSRuntime.InvokeVoidAsync("MV_Components.JSDataTable", "#OrdersListTable", new object[] { options });
     }
 }
 

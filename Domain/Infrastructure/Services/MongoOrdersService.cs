@@ -3,6 +3,7 @@ using Domain.Models;
 using MV.Framework.interfaces;
 using MV.Framework.providers;
 using Newtonsoft.Json;
+using System.Linq;
 
 namespace Domain.Infrastructure.services
 {
@@ -58,6 +59,7 @@ namespace Domain.Infrastructure.services
         {
             _repo.Delete(id, true);
         }
+
     }
 }
 

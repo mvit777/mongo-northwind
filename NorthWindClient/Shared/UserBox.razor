@@ -1,0 +1,81 @@
+﻿@using AKSoftware.Blazor.Utilities;
+@using Domain.Infrastructure.services;
+@inject IJSRuntime JSRuntime;
+@inject UserService UserService;
+@inject NavigationManager NavigationManager
+
+@if (currentUser != null)
+{
+    <div class="btn-group">
+        <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <img src="@("./images/" + currentUser.Image)" width="35" height="35" class="rounded-circle border border-dark" /> @currentUser.Username
+        </button>
+        <div class="dropdown-menu dropdown-menu-right shadow">
+            <div class="dropdown-item"><span class="text-muted">@currentUser.Role</span></div>
+            <hr style="margin-top:-5px;" />
+            <Button HTMLId="btnSettings" Icon="oi oi-cog" HTMLCssClass="dropdown-item" Label="Settings" ClickEventName="btnSettingsClicked" />
+            <button class="dropdown-item" type="button" @onclick="OnBtnImpersonateMenuClicked">
+                <span class="oi oi-people">&nbsp;</span>Impersonate
+            </button>
+            <Button HTMLId="btnLogOut" Icon="oi oi-share-boxed" HTMLCssClass="dropdown-item" Label="LogOut" ClickEventName="btnLogOut" />
+        </div>
+    </div>
+}
+
+
+<!--hidden modal-->
+
+@code {
+    private UserInfo currentUser;
+    private List<UserInfo> Users;
+    private string roleAdmin = "Admin";
+
+    
+
+    protected async Task OnBtnImpersonateMenuClicked()
+    {
+        //placed in MainLayout
+        await JSRuntime.InvokeVoidAsync("MVComponents.ToggleModal", "#UsersModal", "show");
+    }
+
+    protected void SubScribeToUserChanged()
+    {
+        MessagingCenter.Subscribe<UserService, string>(this, "OnUserChanged", (sender, value) =>
+        {
+
+            currentUser = UserService.GetCurrentUser();
+
+            if (currentUser.Role != roleAdmin)
+            {
+                //var Uri = NavigationManager.ToAbsoluteUri("cart");
+                NavigationManager.NavigateTo("/cart");           
+            }
+            StateHasChanged();
+        });
+    }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        currentUser = UserService.GetCurrentUser();
+        Users = UserService.GetUsers();
+
+    }
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+
+                SubScribeToUserChanged();
+
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message + " " + ex.Source);
+            }
+
+        }
+    }
+}

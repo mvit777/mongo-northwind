@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AKSoftware.Blazor.Utilities" Version="1.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\BikeDistributor\MV.Framework\MV.Framework.csproj" />
   </ItemGroup>
 

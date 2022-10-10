@@ -46,24 +46,38 @@ namespace NorthWind.Controllers
 
         // POST api/<OrdersController>
         [HttpPost]
-        public void Post(string value)
+        [EnableCors(PolicyName = "_myAllowSpecificOrigins")]
+        public async Task Post([FromBody] string value)
         {
-            var Order = JsonConvert.DeserializeObject<Orders>(value);
-            _mongoService.Update(Order);
+            await Task.Run(() =>
+            {
+                var Order = JsonConvert.DeserializeObject<Orders>(value);
+                try
+                {
+                    _mongoService.Update(Order);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex.Message);
+
+                }
+            });
+            
         }
 
         // PUT api/<OrdersController>/5
         [HttpPut("{id}")]
-        public void Put(string id, [FromBody] string value)
+        public async Task Put(string id, [FromBody] string value)
         {
             var Order = JsonConvert.DeserializeObject<Orders>(value);
-            _mongoService.Update(Order);
+            await _mongoService.AddOrderAsync(Order);
         }
 
         // DELETE api/<OrdersController>/5
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        public void Delete(string id)
         {
+            _mongoService.Delete(id);
         }
     }
 }
