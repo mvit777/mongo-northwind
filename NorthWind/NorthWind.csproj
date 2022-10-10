@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\BikeDistributor\MV.Framework\MV.Framework.csproj" />
     <ProjectReference Include="..\Domain\Domain.csproj" />
+    <ProjectReference Include="..\MV.Framework\MV.Framework.csproj" />
   </ItemGroup>
 
 </Project>
