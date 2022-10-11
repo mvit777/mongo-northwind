@@ -65,9 +65,9 @@ namespace NorthWind.Controllers
             
         }
 
-        // PUT api/<OrdersController>/5
-        [HttpPut("{id}")]
-        public async Task Put(string id, [FromBody] string value)
+        // PUT api/<OrdersController>
+        [HttpPut]
+        public async Task Put([FromBody] string value)
         {
             var Order = JsonConvert.DeserializeObject<Orders>(value);
             await _mongoService.AddOrderAsync(Order);

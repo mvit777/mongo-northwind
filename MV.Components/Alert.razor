@@ -1,0 +1,15 @@
+﻿@if (Visible)
+{
+    <div class="alert @HTMLCssClass" role="alert">
+        <button type="button" class="close" aria-label="Close" @onclick="onCloseClicked">
+            <span aria-hidden="true">&times;</span>
+        </button>
+        @ChildContent
+    </div>
+}
+
+
+@code {
+    private void onCloseClicked() => NotifyTimerElapsed(this, null);
+    
+}

@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Shared\admin\" />
+    <Folder Include="Shared\Admin\" />
   </ItemGroup>
 
 </Project>
