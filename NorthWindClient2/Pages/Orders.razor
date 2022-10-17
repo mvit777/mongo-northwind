@@ -13,6 +13,7 @@
 
 
 <h3>Orders</h3>
+<div class="flex-end"><Button Color="ButtonColor.Primary" @onclick="() =>OnAddClicked()"> ADD NEW </Button></div>
 <div id="Grid">
     <Grid TItem="Domain.Models.Orders" class="table table-hover table-bordered table-striped" DataProvider="OrdersDataProvider" AllowFiltering="true" Responsive="true">
         <GridColumn TItem="Domain.Models.Orders" HeaderText="Order Id">
@@ -141,11 +142,25 @@
         StateHasChanged();
 
     }
+    private async void OnAddClicked()
+    {
+        OrderItem = new Domain.Models.Orders();
+        GetOrders();//must be not async, does not need to refresh the table as it is done later
+        var prevLastOrder = ListOrders.Max(x => x.OrderID);
+        OrderItem.OrderID = prevLastOrder + 1;
+        var url = endpoint;
+        var data = JsonConvert.SerializeObject(OrderItem);
+        HttpResponseMessage response = await Http.PutAsJsonAsync(url, data);
+        await GetOrders();
+        StateHasChanged();
+    }
     private async Task<GridDataProviderResult<Domain.Models.Orders>> OrdersDataProvider(GridDataProviderRequest<Domain.Models.Orders> request)
     {
-        
-        ListOrders = await Http.GetFromJsonAsync<List<Domain.Models.Orders>>(endpoint);
+        await GetOrders();
         return await Task.FromResult(request.ApplyTo(ListOrders));
+    }
+    private async Task GetOrders(bool refresh = false){
+        ListOrders = await Http.GetFromJsonAsync<List<Domain.Models.Orders>>(endpoint);
     }
     private async Task GetOrder(string id)
     {
