@@ -1,0 +1,174 @@
+﻿@page "/orders"
+@using Domain.Models;
+@using MongoDB.Bson
+@using Newtonsoft.Json;
+@using System.Text;
+@using Domain.Infrastructure.services;
+@using AKSoftware.Blazor.Utilities;
+@using NorthWindClient2.Shared;
+
+@inject HttpClient Http;
+@inject IJSRuntime JSRuntime;
+@inject ConfigService ConfigService;
+
+
+<h3>Orders</h3>
+<div id="Grid">
+    <Grid TItem="Domain.Models.Orders" class="table table-hover table-bordered table-striped" DataProvider="OrdersDataProvider" AllowFiltering="true" Responsive="true">
+        <GridColumn TItem="Domain.Models.Orders" HeaderText="Order Id">
+            @context.OrderID
+        </GridColumn>
+        <GridColumn TItem="Domain.Models.Orders" HeaderText="Customer">
+            @context.CustomerID
+        </GridColumn>
+        <GridColumn TItem="Domain.Models.Orders" HeaderText="Order Date">
+            @context.OrderDate
+        </GridColumn>
+        <GridColumn TItem="Domain.Models.Orders" HeaderText="Shipped Date">
+            @context.ShippedDate
+        </GridColumn>
+        <GridColumn TItem="Domain.Models.Orders" HeaderText="Actions">
+            <Button Color="ButtonColor.Primary" @onclick="() =>OnEditClicked(context._id)"> EDIT </Button>
+            <Button Color="ButtonColor.Danger"> DELETE </Button>
+        </GridColumn>
+    </Grid>
+</div>
+<Modal @ref="EditModal" Title="Modal title" Fullscreen="ModalFullscreen.Always">
+    <BodyTemplate>
+        <Tabs>
+            <Tab Title="Order" IsActive="true">
+                <Content>
+                    <EditForm EditContext="@OrderEditContext" class="row p-3">
+                        <div class="col-md-6 mb-3">
+                            <label for="OrderId">Order ID</label>
+                            <InputNumber id="OrderId" @bind-Value="OrderItem.OrderID" class="form-control" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="Customer">Customer</label>
+                            <InputText id="Customer" @bind-Value="OrderItem.CustomerID" class="form-control" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="OrderDate">Order Date</label>
+                            <InputText id="OrderDate" @bind-Value="OrderItem.OrderDate" class="form-control" />
+
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ShippedDate">Shipped Date</label>
+                            <InputText id="ShippedDate" @bind-Value="OrderItem.ShippedDate" class="form-control" />
+
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="RequiredDate">Required Date</label>
+                            <InputText id="RequiredDate" @bind-Value="OrderItem.RequiredDate" class="form-control" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ShipVia">Ship Via</label><br />
+                            @if (Shippers != null)
+                            {
+                                <InputSelect @bind-Value="OrderItem.ShipVia" class="form-control">
+                                    @foreach (var shipper in Shippers)
+                                    {
+                                        <option value="@shipper.CompanyName">@shipper.CompanyName</option>
+                                    }
+                                </InputSelect>
+                            }
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="RequiredDate">Freight</label>
+                            <InputNumber id="RequiredDate" @bind-Value="OrderItem.Freight" class="form-control" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ShipName">ShipName</label>
+                            <InputText id="ShipName" @bind-Value="OrderItem.ShipName" class="form-control" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ShipAddress">Ship Address</label>
+                            <InputText id="ShipAddress" @bind-Value="OrderItem.ShipAddress" class="form-control" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ShipCity">Ship City</label>
+                            <InputText id="ShipCity" @bind-Value="OrderItem.ShipCity" class="form-control" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ShipRegion">Ship Region</label>
+                            <InputText id="ShipRegion" @bind-Value="OrderItem.ShipRegion" class="form-control" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ShipPostalCode">Ship Postal Code</label>
+                            <InputNumber id="ShipPostalCode" @bind-Value="OrderItem.ShipPostalCode" class="form-control" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ShipCountry">Ship Country</label>
+                            <InputText id="ShipCountry" @bind-Value="OrderItem.ShipCountry" class="form-control" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="Status">Status</label>
+                            <InputText id="Status" @bind-Value="OrderItem.Status" class="form-control" />
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <div class="float-end">
+                            </div>
+                        </div>
+                    </EditForm>
+                </Content>
+            </Tab>
+            <Tab Title="Details">
+                <Content>
+                    <AdminOrderDetails @ref="TabOrderDetails" OrderId="@OrderItem.OrderID" DetailsEndPoint="@endpointDetails" />
+                 </Content>
+            </Tab>
+        </Tabs>
+    </BodyTemplate>
+</Modal>
+@code {
+    private IEnumerable<Domain.Models.Orders>? ListOrders;
+    private string endpoint = "";
+    private string endpointDetails = "";
+    private Domain.Models.Orders OrderItem = new Domain.Models.Orders();
+    private EditContext? OrderEditContext;
+    private Modal? EditModal;
+    private List<Shippers>? Shippers;
+    private AdminOrderDetails? TabOrderDetails;
+
+
+
+    /************************************data handlers***********************/
+    private async void OnEditClicked(string id)
+    {
+        await GetOrder(id);
+        await EditModal?.ShowAsync();
+        TabOrderDetails.PopulateDetails(OrderItem.OrderID);
+        StateHasChanged();
+
+    }
+    private async Task<GridDataProviderResult<Domain.Models.Orders>> OrdersDataProvider(GridDataProviderRequest<Domain.Models.Orders> request)
+    {
+        
+        ListOrders = await Http.GetFromJsonAsync<List<Domain.Models.Orders>>(endpoint);
+        return await Task.FromResult(request.ApplyTo(ListOrders));
+    }
+    private async Task GetOrder(string id)
+    {
+        await Task.Run(() =>
+        {
+            OrderItem = ListOrders?.AsQueryable<Domain.Models.Orders>().Where(x => x._id == id).SingleOrDefault();
+            OrderEditContext = new EditContext(OrderItem);
+        });
+    }
+    private async Task GetShippersList()
+    {
+        var shippersUrl = ConfigService.GetBaseUrl() + ConfigService.GetUrl("shippers.endpoint");
+        Shippers = await Http.GetFromJsonAsync<List<Shippers>>(shippersUrl);
+    }
+    /************************page events**********************************/
+    protected override async Task OnInitializedAsync()
+    {
+        endpoint = ConfigService.GetBaseUrl() + ConfigService.GetUrl("orders.endpoint");
+        endpointDetails = ConfigService.GetBaseUrl() + ConfigService.GetUrl("orderdetails.endpoint");
+        OrderEditContext = new EditContext(OrderItem);
+        await GetShippersList();
+    }
+    //protected async override Task OnAfterRenderAsync(bool firstRender){
+
+    //}
+}

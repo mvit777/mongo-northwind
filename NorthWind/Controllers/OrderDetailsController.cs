@@ -1,5 +1,6 @@
 ﻿using Domain.Infrastructure.services;
 using Domain.Models;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using MV.Framework.interfaces;
 using MV.Framework.providers;
@@ -10,6 +11,7 @@ using NorthWind.Infrastructure;
 namespace NorthWind.Controllers
 {
     [Route("api/[controller]")]
+    [EnableCors(PolicyName = "_myAllowSpecificOrigins")]
     [ApiController]
     public class OrderDetailsController : ControllerBase
     {

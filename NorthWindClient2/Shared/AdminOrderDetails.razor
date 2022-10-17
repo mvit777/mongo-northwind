@@ -1,0 +1,64 @@
+﻿@using Domain.Models;
+@using MongoDB.Bson
+@using Newtonsoft.Json;
+@using System.Text;
+@using Domain.Infrastructure.services;
+@using AKSoftware.Blazor.Utilities;
+@inject HttpClient Http;
+
+@using MV.Components
+
+<h3>Order Details</h3>
+<div><span>total rows found: @AllOrderDetails.Count</span><span>details found: @Details.Count</span><span>order id: @OrderId</span></div>
+@if(Details !=null ){
+<HtmlTable Items="@Details" Context="OrderDetails" HTMLId="OrderDetailsListTable" @ref="OrderDetailsListTable">
+    <HeaderTemplate>
+      <th>Product</th>
+      <th>Quantity</th>
+      <th>Unit price</th>
+      <th>Discount</th>
+    </HeaderTemplate>
+    <RowTemplate>
+        <td>@OrderDetails.ProductID</td>
+        <td>@OrderDetails.Quantity</td>
+        <td>@OrderDetails.UnitPrice</td>
+        <td>@OrderDetails.Discount</td>
+    </RowTemplate>
+</HtmlTable>
+}
+@code {
+    [Parameter] public int OrderId { get; set; }
+    [Parameter] public string DetailsEndPoint { get; set; }
+    private List<OrderDetails> AllOrderDetails = new List<OrderDetails>();
+    private List<OrderDetails> Details = new List<OrderDetails>();
+    private HtmlTable<OrderDetails>? OrderDetailsListTable = null;
+
+    /*****************************data client************************/
+    private async Task GetDetails(){
+        var url = DetailsEndPoint;
+        AllOrderDetails = await Http.GetFromJsonAsync<List<OrderDetails>>(url);
+    }
+    public void PopulateDetails(int orderId){
+
+        OrderId = orderId;
+        Details = new List<OrderDetails>();
+        foreach (OrderDetails detail in AllOrderDetails)
+        {
+            if (detail.OrderID == OrderId)
+            {
+                Details.Add(detail);
+            }
+        }
+        StateHasChanged();  
+    }
+
+    /****************************system handlers*********************/
+    protected override async Task OnInitializedAsync()
+    {
+        await GetDetails();
+    }
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        
+    }
+}
