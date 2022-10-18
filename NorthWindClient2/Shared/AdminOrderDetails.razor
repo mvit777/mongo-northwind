@@ -4,12 +4,16 @@
 @using System.Text;
 @using Domain.Infrastructure.services;
 @using AKSoftware.Blazor.Utilities;
-@inject HttpClient Http;
-
 @using MV.Components
 
+@inject HttpClient Http;
+
+
+
 <h3>Order Details</h3>
-<div><span>total rows found: @AllOrderDetails.Count</span><span>details found: @Details.Count</span><span>order id: @OrderId</span></div>
+<div><span>rows found: @Details.Count</span><span>order id: @OrderId</span></div>
+<div class="float-end"><BlazorBootstrap.Button Color="ButtonColor.Primary">ADD NEW</BlazorBootstrap.Button></div>
+<br />
 @if(Details !=null ){
 <HtmlTable Items="@Details" Context="OrderDetails" HTMLId="OrderDetailsListTable" @ref="OrderDetailsListTable">
     <HeaderTemplate>
@@ -28,7 +32,7 @@
 }
 @code {
     [Parameter] public int OrderId { get; set; }
-    [Parameter] public string DetailsEndPoint { get; set; }
+    [Parameter] public string ? DetailsEndPoint { get; set; }
     private List<OrderDetails> AllOrderDetails = new List<OrderDetails>();
     private List<OrderDetails> Details = new List<OrderDetails>();
     private HtmlTable<OrderDetails>? OrderDetailsListTable = null;

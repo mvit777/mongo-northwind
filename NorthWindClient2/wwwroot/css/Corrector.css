@@ -1,0 +1,5 @@
+﻿.top-row a, .top-row .btn-link {
+    white-space: nowrap;
+    margin-left: 0 !important;
+    text-decoration: none;
+}

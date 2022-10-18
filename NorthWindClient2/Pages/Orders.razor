@@ -13,9 +13,12 @@
 
 
 <h3>Orders</h3>
-<div class="flex-end"><Button Color="ButtonColor.Primary" @onclick="() =>OnAddClicked()"> ADD NEW </Button></div>
+<Toasts class="p-3" Messages="messages" Placement="ToastsPlacement.BottomRight" />
+<div class="float-end"><Button Color="ButtonColor.Primary" @onclick="() =>OnAddClicked()"> ADD NEW </Button></div>
+<div style="clear:both"></div>
+<br />
 <div id="Grid">
-    <Grid TItem="Domain.Models.Orders" class="table table-hover table-bordered table-striped" DataProvider="OrdersDataProvider" AllowFiltering="true" Responsive="true">
+    <Grid TItem="Domain.Models.Orders" @ref="OrdersGrid" class="table table-hover table-bordered table-striped" DataProvider="OrdersDataProvider" AllowFiltering="true" Responsive="true">
         <GridColumn TItem="Domain.Models.Orders" HeaderText="Order Id">
             @context.OrderID
         </GridColumn>
@@ -30,11 +33,18 @@
         </GridColumn>
         <GridColumn TItem="Domain.Models.Orders" HeaderText="Actions">
             <Button Color="ButtonColor.Primary" @onclick="() =>OnEditClicked(context._id)"> EDIT </Button>
-            <Button Color="ButtonColor.Danger"> DELETE </Button>
+            <Button Color="ButtonColor.Danger" @onclick="() =>OnDeleteClicked(context._id, context.OrderID.ToString())"> DELETE </Button>
         </GridColumn>
     </Grid>
 </div>
-<Modal @ref="EditModal" Title="Modal title" Fullscreen="ModalFullscreen.Always">
+<ConfirmDialog @ref="deleteDialog"
+               Title="Are you sure you want to delete this?"
+               Message1=@message
+               Message2="Do you want to proceed?"
+               OnYes="OnConfirmDeleteAsync"
+               OnNo="OnCancelDeleteAsync">
+</ConfirmDialog>
+<Modal @ref="EditModal" Title="@editModalTitle" Fullscreen="ModalFullscreen.Always">
     <BodyTemplate>
         <Tabs>
             <Tab Title="Order" IsActive="true">
@@ -108,6 +118,7 @@
                         </div>
                         <div class="col-md-12 mb-3">
                             <div class="float-end">
+                                <Button Color="ButtonColor.Primary" @onclick="()=>OnSaveClicked(OrderItem._id)">SAVE</Button>
                             </div>
                         </div>
                     </EditForm>
@@ -123,6 +134,7 @@
 </Modal>
 @code {
     private IEnumerable<Domain.Models.Orders>? ListOrders;
+    private Grid<Domain.Models.Orders>? OrdersGrid;
     private string endpoint = "";
     private string endpointDetails = "";
     private Domain.Models.Orders OrderItem = new Domain.Models.Orders();
@@ -130,13 +142,71 @@
     private Modal? EditModal;
     private List<Shippers>? Shippers;
     private AdminOrderDetails? TabOrderDetails;
-
+    private string ? deletableObjId;
+    private ConfirmDialog ? deleteDialog;
+    private string? message;
+    List<ToastMessage> messages = new List<ToastMessage>();
+    private string ? editModalTitle;
 
 
     /************************************data handlers***********************/
+    private async Task OnConfirmDeleteAsync()
+    {
+        var url = endpoint + "/" + deletableObjId;
+        await Http.DeleteAsync(url);
+        messages?.Add(new ToastMessage
+            {
+                Type = ToastType.Success,
+                Message = $"Item deleted. DateTime: {DateTime.Now}",
+            });
+        await GetOrders();
+        await OrdersGrid.RefreshDataAsync();
+        StateHasChanged();
+    }
+    private async Task OnCancelDeleteAsync()
+    {
+        messages?.Add(new ToastMessage
+            {
+                Type = ToastType.Secondary,
+                Message = $"Action canceled. DateTime: {DateTime.Now}",
+            });
+    }
+
+    private async Task OnDeleteClicked(string id, string orderId)
+    {    
+        message = $"Please confirm you want to delete item {orderId}";
+        deleteDialog?.Show();
+        deletableObjId = id;
+    }
+    private async void OnSaveClicked(string id){
+        if(OrderEditContext.Validate()){
+            OrderItem = (Domain.Models.Orders)OrderEditContext.Model;
+            var url = endpoint;
+            var data = JsonConvert.SerializeObject(OrderItem);
+            HttpResponseMessage response = await Http.PostAsJsonAsync(url, data);
+            if (response.IsSuccessStatusCode)
+            {
+                OrderItem = new Domain.Models.Orders();
+                await EditModal.HideAsync();
+                messages?.Add(new ToastMessage
+                    {
+                        Type = ToastType.Success,
+                        Message = $"Item saved",
+                    });
+            }else{
+                await EditModal.HideAsync();
+                messages?.Add(new ToastMessage
+                    {
+                        Type = ToastType.Danger,
+                        Message = $"An error occurred: {response.ReasonPhrase}",
+                    });
+            }
+        }
+    }
     private async void OnEditClicked(string id)
     {
         await GetOrder(id);
+        editModalTitle = $"Editing Order {OrderItem.OrderID.ToString()}";
         await EditModal?.ShowAsync();
         TabOrderDetails.PopulateDetails(OrderItem.OrderID);
         StateHasChanged();
@@ -152,7 +222,7 @@
         var data = JsonConvert.SerializeObject(OrderItem);
         HttpResponseMessage response = await Http.PutAsJsonAsync(url, data);
         await GetOrders();
-        StateHasChanged();
+        await OrdersGrid.RefreshDataAsync();
     }
     private async Task<GridDataProviderResult<Domain.Models.Orders>> OrdersDataProvider(GridDataProviderRequest<Domain.Models.Orders> request)
     {
