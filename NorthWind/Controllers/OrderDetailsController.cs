@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using MV.Framework.interfaces;
 using MV.Framework.providers;
+using Newtonsoft.Json;
 using NorthWind.Infrastructure;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -48,15 +49,18 @@ namespace NorthWind.Controllers
         }
 
         // PUT api/<OrderDetailsController>/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        [HttpPut]
+        public async Task Put([FromBody] string value)
         {
+            var OrderDetail = JsonConvert.DeserializeObject<OrderDetails>(value);
+            await _mongoService.AddOrderDetailsAsync(OrderDetail);
         }
 
         // DELETE api/<OrderDetailsController>/5
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        public void Delete(string id)
         {
+            _mongoService.Delete(id);
         }
     }
 }

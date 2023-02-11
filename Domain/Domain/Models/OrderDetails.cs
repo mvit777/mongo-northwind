@@ -1,7 +1,13 @@
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+
 namespace Domain.Models
 {
+    [BsonIgnoreExtraElements]
     public class OrderDetails
     {
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
         public string _id {get; set;}
         public string _changed { get; set; } = "";
         public string _created {get; set;} = "";

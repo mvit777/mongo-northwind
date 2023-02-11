@@ -32,12 +32,12 @@ namespace Domain.Infrastructure.services
             File.WriteAllText(@"c:\temp\context_as_string", context);
         }
 
-        public async Task<OrderDetails> AddOrderAsync(OrderDetails order)
+        public async Task<OrderDetails> AddOrderDetailsAsync(OrderDetails item)
         {
             
-            await _repo.Create(order);
+            await _repo.Create(item);
 
-            return await _repo.Get(order._id, true);
+            return await _repo.Get(item._id, true);
         }
 
         public async Task<List<OrderDetails>> Get()

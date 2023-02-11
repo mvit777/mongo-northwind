@@ -4,40 +4,65 @@
 @using System.Text;
 @using Domain.Infrastructure.services;
 @using AKSoftware.Blazor.Utilities;
-@using MV.Components
 
 @inject HttpClient Http;
-
-
-
+@inject IJSRuntime JSRuntime;
+@inject ConfigService ConfigService;
+<Toasts class="p-3" Messages="messages" Placement="ToastsPlacement.BottomRight" />
 <h3>Order Details</h3>
-<div><span>rows found: @Details.Count</span><span>order id: @OrderId</span></div>
-<div class="float-end"><BlazorBootstrap.Button Color="ButtonColor.Primary">ADD NEW</BlazorBootstrap.Button></div>
+<div><span>rows found: @DetailsList.Count</span><span>order id: @OrderId</span></div>
+<div class="float-end">
+    <BlazorBootstrap.Button Color="ButtonColor.Primary" @onclick="()=>OnAddClicked()">ADD NEW</BlazorBootstrap.Button>
+    </div>
 <br />
-@if(Details !=null ){
-<HtmlTable Items="@Details" Context="OrderDetails" HTMLId="OrderDetailsListTable" @ref="OrderDetailsListTable">
-    <HeaderTemplate>
-      <th>Product</th>
-      <th>Quantity</th>
-      <th>Unit price</th>
-      <th>Discount</th>
-    </HeaderTemplate>
-    <RowTemplate>
-        <td>@OrderDetails.ProductID</td>
-        <td>@OrderDetails.Quantity</td>
-        <td>@OrderDetails.UnitPrice</td>
-        <td>@OrderDetails.Discount</td>
-    </RowTemplate>
-</HtmlTable>
-}
+<br />
+<br />
+<div style="clear: both"></div>
+
+<Grid TItem="Domain.Models.OrderDetails" @ref="OrderDetailsListTable" class="table table-hover table-bordered table-striped" DataProvider="OrdersDataProvider" AllowFiltering="true" Responsive="true">
+        
+    <GridColumn TItem="Domain.Models.OrderDetails" HeaderText="Product Id">
+            @context.ProductID
+        </GridColumn>
+    <GridColumn TItem="Domain.Models.OrderDetails" HeaderText="Quantity">
+            @context.Quantity
+        </GridColumn>
+    <GridColumn TItem="Domain.Models.OrderDetails" HeaderText="Unit Price">
+            @context.UnitPrice
+        </GridColumn>
+    <GridColumn TItem="Domain.Models.OrderDetails" HeaderText="Discount">
+        @context.Discount
+    </GridColumn>
+        <GridColumn TItem="Domain.Models.OrderDetails" HeaderText="Actions">
+            <Button Color="ButtonColor.Primary" @onclick="() =>OnEditClicked(context._id)"> EDIT </Button>
+            <Button Color="ButtonColor.Danger" @onclick="() =>OnDeleteClicked(context._id)"> DELETE </Button>
+        </GridColumn>
+    </Grid>
 @code {
     [Parameter] public int OrderId { get; set; }
     [Parameter] public string ? DetailsEndPoint { get; set; }
     private List<OrderDetails> AllOrderDetails = new List<OrderDetails>();
-    private List<OrderDetails> Details = new List<OrderDetails>();
-    private HtmlTable<OrderDetails>? OrderDetailsListTable = null;
+    private List<OrderDetails> DetailsList = new List<OrderDetails>();
+    private Grid<OrderDetails>? OrderDetailsListTable;
+    private List<Products> ? ProductsList = null;
+    private string ? ProductsEndPoint { get; set; }
+    List<ToastMessage> messages = new List<ToastMessage>();
 
     /*****************************data client************************/
+    private async Task OnEditClicked(string id){
+
+    }
+    private async Task OnDeleteClicked(string id){
+        var url = DetailsEndPoint + "/" + id;
+        await Http.DeleteAsync(url);
+        messages?.Add(new ToastMessage
+            {
+                Type = ToastType.Success,
+                Message = $"Item deleted. DateTime: {DateTime.Now}",
+            });
+        PopulateDetails(OrderId);
+    }
+
     private async Task GetDetails(){
         var url = DetailsEndPoint;
         AllOrderDetails = await Http.GetFromJsonAsync<List<OrderDetails>>(url);
@@ -45,21 +70,51 @@
     public void PopulateDetails(int orderId){
 
         OrderId = orderId;
-        Details = new List<OrderDetails>();
+        GetDetails();
+
+        DetailsList = new List<OrderDetails>();
         foreach (OrderDetails detail in AllOrderDetails)
         {
             if (detail.OrderID == OrderId)
             {
-                Details.Add(detail);
+                DetailsList.Add(detail);
             }
         }
+        OrderDetailsListTable.RefreshDataAsync();
         StateHasChanged();  
     }
-
+    private async Task OnAddClicked(){
+        var detail = new OrderDetails();
+        detail.OrderID = OrderId;
+        var data = JsonConvert.SerializeObject(detail);
+        HttpResponseMessage response = await Http.PutAsJsonAsync(DetailsEndPoint, data);
+        if(response.StatusCode == System.Net.HttpStatusCode.OK){
+            PopulateDetails(OrderId);
+            messages?.Add(new ToastMessage
+                {
+                    Type = ToastType.Success,
+                    Message = $"Item added",
+                });
+        }
+        
+        //StateHasChanged();
+    }
+    private async Task GetProducts(){
+        ProductsEndPoint = ConfigService.GetBaseUrl() + ConfigService.GetUrl("products.endpoint");
+        ProductsList = await Http.GetFromJsonAsync<List<Products>>(ProductsEndPoint);
+    }
+    private async Task<GridDataProviderResult<Domain.Models.OrderDetails>> OrdersDataProvider(GridDataProviderRequest<Domain.Models.OrderDetails> request)
+    {
+        //await GetOrders();
+        //PopulateDetails(OrderId);
+        return await Task.FromResult(request.ApplyTo(DetailsList));
+    }
     /****************************system handlers*********************/
     protected override async Task OnInitializedAsync()
     {
-        await GetDetails();
+        //await GetDetails();
+        await GetProducts();
+        PopulateDetails(OrderId);
     }
     protected async override Task OnAfterRenderAsync(bool firstRender)
     {

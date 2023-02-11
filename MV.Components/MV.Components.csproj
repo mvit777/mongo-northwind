@@ -6,6 +6,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Content Remove="LonelyInputSelect.razor" />
+  </ItemGroup>
+
 
   <ItemGroup>
     <SupportedPlatform Include="browser" />
@@ -13,8 +17,20 @@
 
   <ItemGroup>
     <PackageReference Include="AKSoftware.Blazor.Utilities" Version="1.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="6.0.9" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="6.0.10" />
     <PackageReference Include="Microsoft.Fast.Components.FluentUI" Version="1.5.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <UpToDateCheckInput Remove="LonelyInputSelect.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="LonelyInputSelect.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="LonelyInputSelect.razor" />
   </ItemGroup>
 
 </Project>

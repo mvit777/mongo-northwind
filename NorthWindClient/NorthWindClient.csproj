@@ -8,9 +8,9 @@
 
   <ItemGroup>
     <PackageReference Include="AKSoftware.Blazor.Utilities" Version="1.0.0" />
-    <PackageReference Include="Blazor.Bootstrap" Version="0.4.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="6.0.9" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="6.0.9" PrivateAssets="all" />
+    <PackageReference Include="Blazor.Bootstrap" Version="0.5.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="6.0.10" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="6.0.10" PrivateAssets="all" />
     <PackageReference Include="Microsoft.Fast.Components.FluentUI" Version="1.5.3" />
   </ItemGroup>
 
