@@ -1,0 +1,42 @@
+@page "/"
+@using Domain.Models;
+@using MongoDB.Bson
+@using Newtonsoft.Json;
+@using System.Text;
+@using Domain.Infrastructure.services;
+@using AKSoftware.Blazor.Utilities;
+@using NorthWindClient6.Shared;
+
+@inject HttpClient Http;
+@inject IJSRuntime JSRuntime;
+@inject ConfigService ConfigService;
+
+<PageTitle>Orders</PageTitle>
+
+<h1>Hello, world!</h1>
+
+Welcome to your new app.
+
+<SurveyPrompt Title="How is Blazor working for you?" />
+@code {
+    private List<Orders>? OrdersList = null;
+    private string endpoint = "";
+    private string endpointDetails = "";
+
+    private async Task GetOrders(bool refreshTable = false)
+    {
+        endpoint = ConfigService.GetBaseUrl() + ConfigService.GetUrl("orders.endpoint");
+        endpointDetails = ConfigService.GetBaseUrl() + ConfigService.GetUrl("orderdetails.endpoint");
+        OrdersList = await Http.GetFromJsonAsync<List<Orders>>(endpoint);
+        
+    }
+    /****************************system handlers*********************/
+    protected override async Task OnInitializedAsync()
+    {
+        
+    }
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        
+    }
+}

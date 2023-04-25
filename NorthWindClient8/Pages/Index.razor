@@ -1,0 +1,151 @@
+﻿@page "/"
+@using Domain.Models;
+@using MongoDB.Bson
+@using Newtonsoft.Json;
+@using System.Text;
+@using Domain.Infrastructure.services;
+@using AKSoftware.Blazor.Utilities;
+@using NorthWindClient8.Shared;
+
+@inject HttpClient Http;
+@inject IJSRuntime JSRuntime;
+@inject ConfigService ConfigService;
+
+<PageTitle>Orders</PageTitle>
+
+<h1>Orders</h1>
+<RadzenDataGrid Data="@OrdersList" TItem="Orders" AllowSorting="true" AllowMultiColumnSorting="true" AllowPaging="true" PageSize="5">
+    <Columns>
+        <RadzenDataGridColumn TItem="Orders" Property="OrderID" Title="Order ID" />
+        <RadzenDataGridColumn TItem="Orders" Property="RequiredDate" Title="Required Date" />
+        <RadzenDataGridColumn TItem="Orders" Property="ShippedDate" Title="Shipped Date" />
+        <RadzenDataGridColumn TItem="Orders" Property="CustomerID" Title="Customer" />
+        <RadzenDataGridColumn TItem="Orders" Property="ShipCountry" Title="Country" />
+        <RadzenDataGridColumn Width="160px" TItem="Orders" Property="OrderID" Title="">
+            <Template Context="data">
+                <RadzenButton ButtonStyle="ButtonStyle.Info" Variant="Variant.Flat" Shade="Shade.Lighter" Icon="edit" class="m-1" Click=@(() => OnOpenModal(data.OrderID)) Text="" />
+                <RadzenButton ButtonStyle="ButtonStyle.Danger" Variant="Variant.Flat" Shade="Shade.Lighter" Icon="delete" class="m-1" Click=@(() => GetOrder(data.OrderID)) Text="" />
+            </Template>
+        </RadzenDataGridColumn>
+    </Columns>
+</RadzenDataGrid>
+<!--hidden edit modal-->
+    <Modal HTMLId="EditOrdersModal" HeaderTitle="EDIT" HTMLCssClass="modal-xl" ShowFooter="false">
+        <HeaderTemplate>
+            <h5 class="modal-title" id="editOrderModalH5"><span class="oi oi-pencil"></span> Editing Order.. @OrderItem?.OrderID</h5>
+            <span class="rounded-circle  light-purple-bg" style="background-color: white;">
+                <button type="button" class="close" @onclick="OnCloseEditModal" data-dismiss="modal" aria-label="Close" style="margin-right: -2px;">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </span>
+        </HeaderTemplate>
+        <ChildContent>
+           <RadzenTabs Change=@OnTabChange TabPosition="@tabPosition" RenderMode="TabRenderMode.Client" >
+               <Tabs>
+                   <RadzenTabsItem Text="Order">
+                    @*<EditForm EditContext="@OrderEditContext" class="row p-3">
+                       
+                    </EditForm>*@
+
+                </RadzenTabsItem>
+                <RadzenTabsItem Text="Details">
+                    <RadzenDataGrid Data="@Details" TItem="OrderDetails" AllowSorting="true" AllowMultiColumnSorting="true" AllowPaging="true" PageSize="5">
+                        <Columns>
+                            <RadzenDataGridColumn TItem="OrderDetails" Property="ProductID" Title="Product" />
+                            <RadzenDataGridColumn TItem="OrderDetails" Property="Quantity" Title="Qty" />
+                            <RadzenDataGridColumn TItem="OrderDetails" Property="UnitPrice" Title="Unit Price" />
+                            <RadzenDataGridColumn TItem="OrderDetails" Property="Discount" Title="Discount" />
+                            <RadzenDataGridColumn Width="160px" TItem="OrderDetails" Property="OrderID" Title="">
+                                <Template Context="data">
+                                    <RadzenButton ButtonStyle="ButtonStyle.Info" Variant="Variant.Flat" Shade="Shade.Lighter" Icon="edit" class="m-1" Click=@(() => OnOpenModal(data.OrderID)) Text="" />
+                                    <RadzenButton ButtonStyle="ButtonStyle.Danger" Variant="Variant.Flat" Shade="Shade.Lighter" Icon="delete" class="m-1" Click=@(() => GetOrder(data.OrderID)) Text="" />
+                                </Template>
+                            </RadzenDataGridColumn>
+                        </Columns>
+                    </RadzenDataGrid>
+                </RadzenTabsItem>
+            </Tabs>
+        </RadzenTabs>
+    </ChildContent>
+    </Modal>
+@code{
+    private List<Orders>? OrdersList = null;
+    private List<OrderDetails> AllDetails = new List<OrderDetails>();
+    private List<OrderDetails> Details = new List<OrderDetails>();
+    private Orders OrderItem = new Orders();
+    private string endpoint = "";
+    private string endpointDetails = "";
+    private List<Shippers>? ShippersList = null;
+    //private List<Option<string>>? ShippersOptions = null;
+    private InputCalendar? OrderDate;
+    private InputCalendar? ShippedDate;
+    private InputCalendar? RequiredDate;
+    private EditContext? OrderEditContext;
+    private Radzen.TabPosition tabPosition = 0;
+    private string currentModal = "";
+    /*************************************handlers*********************************************/
+    private void OnTabChange()
+    {
+
+    }
+    private async void OnOpenModal(int orderId)
+    {
+        await GetOrder(orderId);
+        currentModal = "#EditOrdersModal";
+        await JSRuntime.InvokeVoidAsync("MV_Components.ToggleModal", currentModal, "show");     
+        StateHasChanged();
+    }
+    private async void OnCloseEditModal()
+    {
+        await JSRuntime.InvokeVoidAsync("MV_Components.ToggleModal", currentModal, "hide");
+    }
+    /**************************************data************************************************/
+    private async Task GetOrders(bool refreshTable = false)
+    {
+        endpoint = ConfigService.GetBaseUrl() + ConfigService.GetUrl("orders.endpoint");
+        endpointDetails = ConfigService.GetBaseUrl() + ConfigService.GetUrl("orderdetails.endpoint");
+        OrdersList = await Http.GetFromJsonAsync<List<Orders>>(endpoint);
+    }
+    private async Task GetOrder(int orderId)
+    {
+        //await Task.Run(() =>
+        //{
+            OrderItem = OrdersList?.AsQueryable<Orders>().Where(x => x.OrderID == orderId).SingleOrDefault();
+            OrderEditContext = new EditContext(OrderItem);
+            await GetDetails(orderId);
+        //});
+    }
+    private async Task GetDetails(int orderId)
+    {
+
+        await Task.Run(() =>
+        {
+            Details = new List<OrderDetails>();
+            foreach (OrderDetails detail in AllDetails)
+            {
+                if (detail.OrderID == orderId)
+                {
+                    Details.Add(detail);
+                }
+            }
+            StateHasChanged();
+        });      
+    }
+    //private async Task GetAllDetails()
+    //{
+        
+    //}
+    ///****************************system handlers*********************/
+    protected override async Task OnInitializedAsync()
+    { 
+        OrderEditContext = new EditContext(OrderItem);
+        await GetOrders();
+        var url = endpointDetails;
+        AllDetails = await Http.GetFromJsonAsync<List<OrderDetails>>(url);
+        
+    }
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        
+    }
+}
