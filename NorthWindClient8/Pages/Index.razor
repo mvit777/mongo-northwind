@@ -1,5 +1,6 @@
 ﻿@page "/"
 @using Domain.Models;
+@using Microsoft.Fast.Components.FluentUI;
 @using MongoDB.Bson
 @using Newtonsoft.Json;
 @using System.Text;
@@ -14,39 +15,106 @@
 <PageTitle>Orders</PageTitle>
 
 <h1>Orders</h1>
-<RadzenDataGrid Data="@OrdersList" TItem="Orders" AllowSorting="true" AllowMultiColumnSorting="true" AllowPaging="true" PageSize="5">
-    <Columns>
-        <RadzenDataGridColumn TItem="Orders" Property="OrderID" Title="Order ID" />
-        <RadzenDataGridColumn TItem="Orders" Property="RequiredDate" Title="Required Date" />
-        <RadzenDataGridColumn TItem="Orders" Property="ShippedDate" Title="Shipped Date" />
-        <RadzenDataGridColumn TItem="Orders" Property="CustomerID" Title="Customer" />
-        <RadzenDataGridColumn TItem="Orders" Property="ShipCountry" Title="Country" />
-        <RadzenDataGridColumn Width="160px" TItem="Orders" Property="OrderID" Title="">
-            <Template Context="data">
-                <RadzenButton ButtonStyle="ButtonStyle.Info" Variant="Variant.Flat" Shade="Shade.Lighter" Icon="edit" class="m-1" Click=@(() => OnOpenModal(data.OrderID)) Text="" />
-                <RadzenButton ButtonStyle="ButtonStyle.Danger" Variant="Variant.Flat" Shade="Shade.Lighter" Icon="delete" class="m-1" Click=@(() => GetOrder(data.OrderID)) Text="" />
-            </Template>
-        </RadzenDataGridColumn>
-    </Columns>
-</RadzenDataGrid>
+<div style="float: right;">
+    <RadzenButton Click=@(() => OnAddNewOrder()) Text="Add New" Icon="add_c" ButtonStyle="ButtonStyle.Primary" />
+</div>
+<div style="clear: both"></div>
+<div style="margin-top: 20px">
+    <RadzenAlert AlertStyle="AlertStyle.Danger" ShowIcon="true" Variant="Variant.Flat" Shade="Shade.Lighter" Visible=@isVisible @ref="PnlDeleteOrder">
+        Please confirm you want to delete the order <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Click=@(()=>OnDeleteOrderConfirmed()) Text="Confirm"/>
+    </RadzenAlert>
+    <RadzenDataGrid Data="@OrdersList" TItem="Orders" AllowSorting="true" AllowMultiColumnSorting="true" AllowPaging="true" PageSize="5">
+        <Columns>
+            <RadzenDataGridColumn TItem="Orders" Property="OrderID" Title="Order ID" />
+            <RadzenDataGridColumn TItem="Orders" Property="RequiredDate" Title="Required Date" />
+            <RadzenDataGridColumn TItem="Orders" Property="ShippedDate" Title="Shipped Date" />
+            <RadzenDataGridColumn TItem="Orders" Property="CustomerID" Title="Customer" />
+            <RadzenDataGridColumn TItem="Orders" Property="ShipCountry" Title="Country" />
+            <RadzenDataGridColumn Width="160px" TItem="Orders" Property="OrderID" Title="">
+                <Template Context="data">
+                    <RadzenButton ButtonStyle="ButtonStyle.Info" Variant="Variant.Flat" Shade="Shade.Lighter" Icon="edit" class="m-1" Click=@(() => OnOpenModal(data.OrderID)) Text="" />
+                    <RadzenButton ButtonStyle="ButtonStyle.Danger" Variant="Variant.Flat" Shade="Shade.Lighter" Icon="delete" class="m-1" Click=@(() => OnDeleteOrder(data.OrderID)) Text="" />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+</div>
 <!--hidden edit modal-->
-    <Modal HTMLId="EditOrdersModal" HeaderTitle="EDIT" HTMLCssClass="modal-xl" ShowFooter="false">
-        <HeaderTemplate>
-            <h5 class="modal-title" id="editOrderModalH5"><span class="oi oi-pencil"></span> Editing Order.. @OrderItem?.OrderID</h5>
-            <span class="rounded-circle  light-purple-bg" style="background-color: white;">
-                <button type="button" class="close" @onclick="OnCloseEditModal" data-dismiss="modal" aria-label="Close" style="margin-right: -2px;">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </span>
-        </HeaderTemplate>
-        <ChildContent>
-           <RadzenTabs Change=@OnTabChange TabPosition="@tabPosition" RenderMode="TabRenderMode.Client" >
-               <Tabs>
-                   <RadzenTabsItem Text="Order">
-                    @*<EditForm EditContext="@OrderEditContext" class="row p-3">
-                       
-                    </EditForm>*@
-
+<Modal HTMLId="EditOrdersModal" HeaderTitle="EDIT" HTMLCssClass="modal-xl" ShowFooter="false">
+    <HeaderTemplate>
+        <h5 class="modal-title" id="editOrderModalH5"><span class="oi oi-pencil"></span> Editing Order.. @OrderItem?.OrderID</h5>
+        <span class="rounded-circle  light-purple-bg" style="background-color: white;">
+            <button type="button" class="close" @onclick="OnCloseEditModal" data-dismiss="modal" aria-label="Close" style="margin-right: -2px;">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </span>
+    </HeaderTemplate>
+    <ChildContent>
+        <RadzenTabs Change=@OnTabChange TabPosition="@tabPosition" RenderMode="TabRenderMode.Client">
+            <Tabs>
+                <RadzenTabsItem Text="Order">
+                    <EditForm EditContext="@OrderEditContext" class="row p-3">
+                        <div class="col-md-6 mb-3">
+                            <label for="OrderId">Order ID</label>
+                            <InputNumber id="OrderId" @bind-Value="OrderItem.OrderID" class="form-control" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="Customer">Customer</label>
+                            <InputText id="Customer" @bind-Value="OrderItem.CustomerID" class="form-control" />
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="OrderDate">Order Date</label>
+                            <RadzenDatePicker @bind-Value=@OrderItem.OrderDate />
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="RequiredDate">Required Date</label>
+                            <RadzenDatePicker @bind-Value=@OrderItem.RequiredDate />
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="ShippedDate">Shipped Date</label>
+                            <RadzenDatePicker @bind-Value=@OrderItem.ShippedDate />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ShipVia">Shipper</label>
+                            <RadzenDropDown @bind-Value=@selectedShipper Data=@ShippersList Style="width: 100%; max-width: 400px;" TextProperty="CompanyName" ValueProperty="ShipperID" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="RequiredDate">Freight</label>
+                            <InputNumber id="RequiredDate" @bind-Value="OrderItem.Freight" class="form-control" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ShipName">ShipName</label>
+                            <InputText id="ShipName" @bind-Value="OrderItem.ShipName" class="form-control" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ShipAddress">Ship Address</label>
+                            <InputText id="ShipAddress" @bind-Value="OrderItem.ShipAddress" class="form-control" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ShipCity">Ship City</label>
+                            <InputText id="ShipCity" @bind-Value="OrderItem.ShipCity" class="form-control" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ShipRegion">Ship Region</label>
+                            <InputText id="ShipRegion" @bind-Value="OrderItem.ShipRegion" class="form-control" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ShipPostalCode">Ship Postal Code</label>
+                            <InputNumber id="ShipPostalCode" @bind-Value="OrderItem.ShipPostalCode" class="form-control" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ShipCountry">Ship Country</label>
+                            <InputText id="ShipCountry" @bind-Value="OrderItem.ShipCountry" class="form-control" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="Status">Status</label>
+                            <InputText id="Status" @bind-Value="OrderItem.Status" class="form-control" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <RadzenButton Click=@(()=> OnOrderUpdateClick(OrderItem.OrderID)) Icon="save" ButtonStyle="ButtonStyle.Primary" />
+                            <RadzenButton Click=@(()=> OnCloseEditModal()) Icon="close" ButtonStyle="ButtonStyle.Danger" />
+                        </div>
+                    </EditForm>
                 </RadzenTabsItem>
                 <RadzenTabsItem Text="Details">
                     <RadzenDataGrid Data="@Details" TItem="OrderDetails" AllowSorting="true" AllowMultiColumnSorting="true" AllowPaging="true" PageSize="5">
@@ -58,7 +126,7 @@
                             <RadzenDataGridColumn Width="160px" TItem="OrderDetails" Property="OrderID" Title="">
                                 <Template Context="data">
                                     <RadzenButton ButtonStyle="ButtonStyle.Info" Variant="Variant.Flat" Shade="Shade.Lighter" Icon="edit" class="m-1" Click=@(() => OnOpenModal(data.OrderID)) Text="" />
-                                    <RadzenButton ButtonStyle="ButtonStyle.Danger" Variant="Variant.Flat" Shade="Shade.Lighter" Icon="delete" class="m-1" Click=@(() => GetOrder(data.OrderID)) Text="" />
+                                    <RadzenButton ButtonStyle="ButtonStyle.Danger" Variant="Variant.Flat" Shade="Shade.Lighter" Icon="delete" class="m-1" Click=@(() => OnDeleteOrder(data.OrderID)) Text="" />
                                 </Template>
                             </RadzenDataGridColumn>
                         </Columns>
@@ -67,8 +135,8 @@
             </Tabs>
         </RadzenTabs>
     </ChildContent>
-    </Modal>
-@code{
+</Modal>
+@code {
     private List<Orders>? OrdersList = null;
     private List<OrderDetails> AllDetails = new List<OrderDetails>();
     private List<OrderDetails> Details = new List<OrderDetails>();
@@ -76,14 +144,57 @@
     private string endpoint = "";
     private string endpointDetails = "";
     private List<Shippers>? ShippersList = null;
-    //private List<Option<string>>? ShippersOptions = null;
-    private InputCalendar? OrderDate;
+    private string selectedShipper = "";
+    private List<Option<string>>? ShippersOptions = null;
+    private DateTime? OrderDate;
     private InputCalendar? ShippedDate;
     private InputCalendar? RequiredDate;
     private EditContext? OrderEditContext;
     private Radzen.TabPosition tabPosition = 0;
     private string currentModal = "";
+    private string currentId = "";
+    private int DeletableOrderId = 0;
+    private RadzenAlert ? PnlDeleteOrder;
+    private Boolean isVisible = false;
     /*************************************handlers*********************************************/
+    private async void OnDeleteOrderConfirmed()
+    {
+        var deletableOrder = OrdersList?.AsQueryable<Orders>().Where(x => x.OrderID == DeletableOrderId).SingleOrDefault();
+        var url = endpoint + "/" + deletableOrder._id;
+        await Http.DeleteAsync(url);
+        await GetOrders(true);
+        isVisible = false;
+        StateHasChanged();
+    }
+    private void OnDeleteOrder(int orderID)
+    {
+        DeletableOrderId = orderID;
+        isVisible = true;
+        StateHasChanged();
+    }
+    private async void OnAddNewOrder()
+    {
+        currentId = "";
+        OrderItem = new Orders();
+        var prevLastOrder = 0;
+        if (OrdersList != null)
+        {
+            prevLastOrder = OrdersList.Max(x => x.OrderID);
+        }
+        OrderItem.OrderID = prevLastOrder + 1;
+        var url = endpoint;
+        var data = JsonConvert.SerializeObject(OrderItem);
+        HttpResponseMessage response = await Http.PutAsJsonAsync(url, data);
+        await GetOrders(true);
+        currentId = OrderItem.OrderID.ToString();
+        OnOpenModal(OrderItem.OrderID);
+        StateHasChanged();
+    }
+    private async void OnOrderUpdateClick(int orderID)
+    {
+        Console.Write("stop");
+    }
+
     private void OnTabChange()
     {
 
@@ -92,7 +203,7 @@
     {
         await GetOrder(orderId);
         currentModal = "#EditOrdersModal";
-        await JSRuntime.InvokeVoidAsync("MV_Components.ToggleModal", currentModal, "show");     
+        await JSRuntime.InvokeVoidAsync("MV_Components.ToggleModal", currentModal, "show");
         StateHasChanged();
     }
     private async void OnCloseEditModal()
@@ -110,9 +221,10 @@
     {
         //await Task.Run(() =>
         //{
-            OrderItem = OrdersList?.AsQueryable<Orders>().Where(x => x.OrderID == orderId).SingleOrDefault();
-            OrderEditContext = new EditContext(OrderItem);
-            await GetDetails(orderId);
+        OrderItem = OrdersList?.AsQueryable<Orders>().Where(x => x.OrderID == orderId).SingleOrDefault();
+        OrderEditContext = new EditContext(OrderItem);
+        selectedShipper = OrderItem.ShipVia;
+        await GetDetails(orderId);
         //});
     }
     private async Task GetDetails(int orderId)
@@ -129,23 +241,34 @@
                 }
             }
             StateHasChanged();
-        });      
+        });
     }
-    //private async Task GetAllDetails()
-    //{
-        
-    //}
-    ///****************************system handlers*********************/
-    protected override async Task OnInitializedAsync()
-    { 
-        OrderEditContext = new EditContext(OrderItem);
-        await GetOrders();
+    private async Task GetShippersList()
+    {
+        var shippersUrl = ConfigService.GetBaseUrl() + ConfigService.GetUrl("shippers.endpoint");
+        ShippersList = await Http.GetFromJsonAsync<List<Shippers>>(shippersUrl);
+        ShippersOptions = new List<Option<string>>();
+        foreach (var shipper in ShippersList)
+        {
+            ShippersOptions.Add(new Option<string> { Key = shipper.ShipperID.ToString(), Value = shipper.CompanyName });
+        }
+    }
+    private async Task GetAllDetails()
+    {
         var url = endpointDetails;
         AllDetails = await Http.GetFromJsonAsync<List<OrderDetails>>(url);
-        
+    }
+    ///****************************system handlers*********************/
+    protected override async Task OnInitializedAsync()
+    {
+        OrderEditContext = new EditContext(OrderItem);
+        await GetShippersList();
+        await GetOrders();
+        await GetAllDetails();
+
     }
     protected async override Task OnAfterRenderAsync(bool firstRender)
     {
-        
+
     }
 }
