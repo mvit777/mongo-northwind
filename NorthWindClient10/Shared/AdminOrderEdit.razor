@@ -1,0 +1,106 @@
+﻿@using Domain.Models;
+@using MongoDB.Bson
+@using Newtonsoft.Json;
+@using System.Text;
+@using Domain.Infrastructure.services;
+@using AKSoftware.Blazor.Utilities;
+@using NorthWindClient10.Shared;
+
+@inject HttpClient Http;
+@inject IJSRuntime JSRuntime;
+@inject ConfigService ConfigService;
+@inject IDialogService DialogService;
+
+<MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
+    <MudTabPanel Text="ORDER">
+
+        <MudText>
+            <EditForm EditContext="@OrderEditContext" class="row p-3">
+                <div class="col-md-6 mb-3">
+                    <label for="OrderId">Order ID</label>
+                    <InputNumber id="OrderId" @bind-Value="OrderItem.OrderID" class="form-control" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="Customer">Customer</label>
+                    <InputText id="Customer" @bind-Value="OrderItem.CustomerID" class="form-control" />
+                </div>
+                <div class="col-md-4 mb-3">
+                    @*<label for="OrderDate">Order Date</label>*@
+                    <MudDatePicker Label="Order Date" @bind-Date="OrderDate" />
+                </div>
+                <div class="col-md-4 mb-3">
+                    <MudDatePicker Label="Required Date" @bind-Date="RequiredDate" />
+                </div>
+                <div class="col-md-4 mb-3">
+                    <MudDatePicker Label="Shipped Date" @bind-Date="ShippedDate" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="RequiredDate">Freight</label>
+                    <InputNumber id="RequiredDate" @bind-Value="OrderItem.Freight" class="form-control" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="ShipName">ShipName</label>
+                    <InputText id="ShipName" @bind-Value="OrderItem.ShipName" class="form-control" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="ShipAddress">Ship Address</label>
+                    <InputText id="ShipAddress" @bind-Value="OrderItem.ShipAddress" class="form-control" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="ShipCity">Ship City</label>
+                    <InputText id="ShipCity" @bind-Value="OrderItem.ShipCity" class="form-control" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="ShipRegion">Ship Region</label>
+                    <InputText id="ShipRegion" @bind-Value="OrderItem.ShipRegion" class="form-control" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="ShipPostalCode">Ship Postal Code</label>
+                    <InputNumber id="ShipPostalCode" @bind-Value="OrderItem.ShipPostalCode" class="form-control" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="ShipCountry">Ship Country</label>
+                    <InputText id="ShipCountry" @bind-Value="OrderItem.ShipCountry" class="form-control" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="Status">Status</label>
+                    <InputText id="Status" @bind-Value="OrderItem.Status" class="form-control" />
+                </div>
+            </EditForm>
+        </MudText>
+
+    </MudTabPanel>
+    <MudTabPanel Text="DETAILS">
+        <MudText><AdminOrderDetailsEdit OrderID="@OrderID" /></MudText>
+    </MudTabPanel>
+</MudTabs>
+@code {
+    [CascadingParameter] MudDialogInstance? MudDialog { get; set; }
+
+    [Parameter] public List<Orders>? OrdersList { get; set; }
+    [Parameter] public int OrderID { get; set; }
+    private EditContext? OrderEditContext;
+    private Orders OrderItem = new Orders();
+    private DateTime? OrderDate;
+    private DateTime? RequiredDate;
+    private DateTime? ShippedDate;
+    /**************************data***********************************+*/
+    private async Task GetOrder()
+    {
+        await Task.Run(() =>
+       {
+           OrderItem = OrdersList?.AsQueryable<Orders>().Where(x => x.OrderID == OrderID).SingleOrDefault();
+           OrderDate = DateTime.Parse(OrderItem.OrderDate);
+           RequiredDate = DateTime.Parse(OrderItem.RequiredDate);
+           ShippedDate = DateTime.Parse(OrderItem.ShippedDate);
+           OrderEditContext = new EditContext(OrderItem);
+       });
+    }
+    /****************************system handlers*********************/
+    protected override async Task OnInitializedAsync()
+    {
+        OrderEditContext = new EditContext(OrderItem);
+        await GetOrder();
+        StateHasChanged();
+    }
+}

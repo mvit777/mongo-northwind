@@ -1,0 +1,68 @@
+﻿@page "/"
+@using Domain.Models;
+@using MongoDB.Bson
+@using Newtonsoft.Json;
+@using System.Text;
+@using Domain.Infrastructure.services;
+@using AKSoftware.Blazor.Utilities;
+@using NorthWindClient10.Shared;
+
+@inject HttpClient Http;
+@inject IJSRuntime JSRuntime;
+@inject ConfigService ConfigService;
+@inject IDialogService DialogService;
+
+<PageTitle>Index</PageTitle>
+
+<h1>Orders</h1>
+
+<MudDataGrid Items="@OrdersList">
+    <Columns>
+        <PropertyColumn Property="x => x.OrderID" Title="#" />
+        <PropertyColumn Property="x => x.CustomerID" Title="Customer" />
+        <PropertyColumn Property="x => x.OrderDate" Title="Date"/>
+        <PropertyColumn Property="x => x.RequiredDate" Title="Required"/>
+        <PropertyColumn Property="x => x.ShippedDate" Title="Shipped" />
+        <PropertyColumn Property="x => x.ShipCountry" Title="Country" />
+        <TemplateColumn CellClass="d-flex justify-end">
+            <CellTemplate>
+                <MudStack Row>
+                    <MudButton Size="@Size.Small" Variant="@Variant.Filled" Color="@Color.Primary" @onclick="() => OnEditDetailsClicked(10249)">Edit</MudButton>
+                    <MudButton Size="@Size.Small" Variant="@Variant.Filled" Color="@Color.Error">Delete</MudButton>
+                </MudStack>
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+</MudDataGrid>
+
+@code {
+    private List<Orders> OrdersList = new List<Orders>();
+    private string endpointOrders = "";
+    private Orders OrderItem = new Orders();
+
+    /**************************handlers*********************************/
+    private async Task OnEditDetailsClicked(int orderID)
+    {
+        var parameters = new DialogParameters();
+        parameters.Add("OrdersList", OrdersList);
+        parameters.Add("OrderID", orderID);
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.ExtraExtraLarge, FullWidth = true };
+        await DialogService.ShowAsync<AdminOrderEdit>("Editing Order detail #" + orderID.ToString(), parameters, options);
+    }
+
+    /************************Data client*******************************/
+    
+    private async Task GetOrders(bool refreshTable = false)
+    {
+        endpointOrders = ConfigService.GetBaseUrl() + ConfigService.GetUrl("orders.endpoint");
+        OrdersList = await Http.GetFromJsonAsync<List<Orders>>(endpointOrders);
+
+    }
+    
+    /****************************system handlers*********************/
+    protected override async Task OnInitializedAsync()
+    {
+        await GetOrders();
+    }
+    
+}

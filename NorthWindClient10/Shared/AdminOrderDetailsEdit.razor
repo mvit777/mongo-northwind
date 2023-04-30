@@ -1,0 +1,71 @@
+﻿@using Domain.Models;
+@using MongoDB.Bson
+@using Newtonsoft.Json;
+@using System.Text;
+@using Domain.Infrastructure.services;
+@using AKSoftware.Blazor.Utilities;
+@using NorthWindClient10.Shared;
+
+@inject HttpClient Http;
+@inject IJSRuntime JSRuntime;
+@inject ConfigService ConfigService;
+@inject IDialogService DialogService;
+
+<MudDataGrid Items="@DetailsList">
+    <Columns>
+        <PropertyColumn Property="x => x.ProductID" Title="Product" />
+        <PropertyColumn Property="x => x.Quantity" Title="Quantity" />
+        <PropertyColumn Property="x => x.UnitPrice" Title="Unit Price" />
+        <PropertyColumn Property="x => x.Discount" Title="Discount" />
+    </Columns>
+</MudDataGrid>
+
+@code {
+    [Parameter] public int OrderID { get; set; }
+    private List<OrderDetails>? AllDetails;
+    private List<OrderDetails>? DetailsList;
+    private List<Products>? AllProducts;
+    private string endpointDetails = "";
+    private string endpointProducts = "";
+    /*******************************data******************************/
+    private async Task GetDetails()
+    {
+        await Task.Run(() =>
+                {
+                    DetailsList = new List<OrderDetails>();
+                    foreach (OrderDetails detail in AllDetails)
+                    {
+                        if (detail.OrderID == OrderID)
+                        {
+                            DetailsList.Add(detail);
+                        }
+                    }
+                    StateHasChanged();
+                });
+    }
+    private async Task GetAllProducts()
+    {
+        var url = endpointProducts;
+        AllProducts = await Http.GetFromJsonAsync<List<Products>>(url);
+    }
+    private string GetProductName(int productID)
+    {
+        var product = AllProducts?.AsQueryable<Products>().Where(x => x.ProductID == productID).SingleOrDefault();
+        return product.ProductName;
+    }
+    private async Task GetAllDetails()
+    {
+        var url = endpointDetails;
+        AllDetails = await Http.GetFromJsonAsync<List<OrderDetails>>(url);
+    }
+    /****************************system handlers*********************/
+    protected override async Task OnInitializedAsync()
+    {
+        endpointDetails = ConfigService.GetBaseUrl() + ConfigService.GetUrl("orderdetails.endpoint");
+        endpointProducts = ConfigService.GetBaseUrl() + ConfigService.GetUrl("products.endpoint");
+        await GetAllDetails();
+        await GetDetails();
+        await GetAllProducts();
+        StateHasChanged();
+    }
+}
